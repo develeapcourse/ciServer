@@ -45,7 +45,7 @@ def main():
                     os.makedirs(build_dir)
 
                 shutil.rmtree(build_dir)
-                
+
                 git("clone", git_repo, build_dir)
 
                 # subprocess.call("build", shell=True)
