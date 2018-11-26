@@ -25,7 +25,7 @@ logging.basicConfig(filename = DIR_NAME +"/ci_log-" + str(date.today()) + ".txt"
 logger = logging.getLogger("ci_logger")
 
 
-def ci_cycle():
+def start_cycle():
 	logger.debug("starts a CI cycle")
 	
 
@@ -42,4 +42,3 @@ def clone_from_remote(remote_url):
 
 def end_cycle():
 	logger.debug("end of CI cycle")
-	
