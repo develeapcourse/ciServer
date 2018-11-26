@@ -1,9 +1,11 @@
 import json
 import requests
-import datetime
+# import datetime
 import subprocess
-import sys
+# import sys
 import shutil
+import tarfile
+import os
 
 api_token = 'your_api_token'
 api_url_base = "https://api.github.com/repos/develeapcourse/gan_shmuel/commits"
@@ -13,9 +15,11 @@ api_url_base = "https://api.github.com/repos/develeapcourse/gan_shmuel/commits"
 
 def main():
 
-    working_dir = "/tmp/gan_shmuel"
+    project_name = "gan_shmuel"
+    project_dir = "/tmp/" + project_name
+    git_repo = "https://github.com/develeapcourse/" + project_name + ".git"
 
-    last_run_data = init_run()
+    last_run_data = init_run(project_dir)
 
     last_run_date = last_run_data[0]
     last_run_commit = last_run_data[1]
@@ -35,15 +39,21 @@ def main():
 
             try:
 
-                shutil.rmtree(working_dir)
+                build_dir = project_dir + "/build"
 
-                git("clone", "https://github.com/develeapcourse/gan_shmuel.git", working_dir)
+                if not os.path.exists(build_dir):
+                    os.makedirs(build_dir)
+
+                shutil.rmtree(build_dir)
+                
+                git("clone", git_repo, build_dir)
 
                 # subprocess.call("build", shell=True)
 
-                # subprocess.call("move_artifacts", shell=True)
+                # archive_artifacts(current_run_date, project_dir, project_name)
 
-                save_current_data(current_run_date, current_run_commit)
+                save_current_data(current_run_date, current_run_commit, project_dir)
+
 
 
             except Exception as e:
@@ -55,11 +65,23 @@ def main():
 
         print('[!] No Commit in repo')
 
-def init_run():
+def archive_artifacts(current_run_date, project_dir, project_name):
+
+    archives_dir = project_dir + "/archives/"
+    tar_name = archives_dir + project_name + "-" + current_run_date
+
+    tar = tarfile.open(tar_name, "w")
+
+    for name in ["artifact1", "artifact2", "artifact2"]:
+        tar.add(name)
+        tar.close()
+
+def init_run(project_dir):
 
     try:
 
-        last_run = open("last.txt", "rt")
+        last_run_file = project_dir + "/.last.txt"
+        last_run = open(last_run_file, "rt")
 
         last_run_date = last_run.readline()
         last_run_commit = last_run.readline()
@@ -78,11 +100,12 @@ def git(*args):
 
     return subprocess.check_call(['git'] + list(args))
 
-def save_current_data(current_run_date, current_run_commit):
+def save_current_data(current_run_date, current_run_commit, project_dir):
 
     try:
 
-        current_run = open("last.txt", "wt")
+        current_run_file = project_dir + "/.last.txt"
+        current_run = open(current_run_file, "wt")
 
         current_run.truncate(0)  # need '0' when using r+
         current_run.write(current_run_date + '\n')
