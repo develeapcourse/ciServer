@@ -1,90 +1,80 @@
 import json
 import requests
-# import datetime
 import subprocess
-# import sys
 import shutil
 import tarfile
 import os
 
-api_token = 'your_api_token'
-api_url_base = "https://api.github.com/repos/develeapcourse/gan_shmuel/commits"
+from config_build_run import Config
+from logger import  ci_logger
 
-# headers = {'Content-Type': 'application/json',
-#            'Authorization': 'Bearer {0}'.format(api_token)}
+headers = {'Content-Type': 'application/json'}
 
 def main():
 
-    project_name = "gan_shmuel"
-    project_dir = "/tmp/" + project_name
-    git_repo = "https://github.com/develeapcourse/" + project_name + ".git"
+    ci_logger.start_cycle()
 
-    last_run_data = init_run(project_dir)
+    api_url_base, build_dir, devops_build_script, git_repo, last_run_file, project_dir = get_configuration()
+    last_run_date, last_run_commit  = init_run(project_dir, last_run_file)
+    print ('test last run = ' + str(last_run_date) + " - " + str(last_run_commit))
 
-    last_run_date = last_run_data[0]
-    last_run_commit = last_run_data[1]
+    current_run_date, current_run_commit = get_commit_info(api_url_base, last_run_date)
+    print('test current run = ' + str(current_run_date) + ' - ' + str(current_run_commit))
 
-    # print ('last run = ' + str(last_run_date) + "," + str(last_run_commit))
+    if current_run_commit is None:
 
-    current_commit_data = get_commit_info(last_run_date)
+        print('[!] No commit in repo')
+        exit()
 
-    # print ('current run =' + str(current_commit_data[0]) + ", " + str(current_commit_data[1]))
+    if current_run_commit != last_run_commit:
 
-    if current_commit_data is not None:
+        try:
 
-        current_run_date = current_commit_data[0]
-        current_run_commit = current_commit_data[1]
+            if not os.path.exists(build_dir):
+                os.makedirs(build_dir)
 
-        if current_run_commit != last_run_commit:
+            perform_clone_and_build(build_dir, current_run_commit, devops_build_script, git_repo, project_dir)
+            save_current_run(current_run_date, current_run_commit, project_dir, last_run_file)
 
-            try:
+        except Exception as e:
+            print(e)
 
-                build_dir = project_dir + "/build"
+def get_configuration():
+    config = Config('.app_config')
 
-                if not os.path.exists(build_dir):
-                    os.makedirs(build_dir)
+    api_url_base = config.get('Git', 'api_url_base')
+    project_dir = config.get('Paths', 'project_dir')
+    git_repo = config.get('Git', 'git_repo')
+    last_run_file = config.get('Project', 'last_run_file')
+    build_dir = config.get('Paths', 'build_dir')
+    devops_build_script = config.get('Paths', 'devops_build_script')
 
-                shutil.rmtree(build_dir)
+    print("test url base = " + str(api_url_base))
+    print("test project_dir = " + str(project_dir))
+    print("test git_repo = " + str(git_repo))
+    print("test last_run_file = " + str(last_run_file))
 
-                git("clone", git_repo, build_dir)
+    return api_url_base, build_dir, devops_build_script, git_repo, last_run_file, project_dir
 
-                # subprocess.call("build", shell=True)
+def perform_clone_and_build(build_dir, current_run_commit, devops_build_script, git_repo, project_dir):
+    # start from clean
+    if current_run_commit is None or str(current_run_commit).strip() == '':
+        print("Error! - commit cannot be empy")
+        exit()
 
-                # archive_artifacts(current_run_date, project_dir, project_name)
+    shutil.rmtree(build_dir)
+    git("clone", git_repo, build_dir)
+    subprocess.call([devops_build_script, current_run_commit, build_dir])
 
-                save_current_data(current_run_date, current_run_commit, project_dir)
-
-
-
-            except Exception as e:
-
-                print(e)
-
-
-    else:
-
-        print('[!] No Commit in repo')
-
-def archive_artifacts(current_run_date, project_dir, project_name):
-
-    archives_dir = project_dir + "/archives/"
-    tar_name = archives_dir + project_name + "-" + current_run_date
-
-    tar = tarfile.open(tar_name, "w")
-
-    for name in ["artifact1", "artifact2", "artifact2"]:
-        tar.add(name)
-        tar.close()
-
-def init_run(project_dir):
+def init_run(project_dir, last_run_file):
 
     try:
-
-        last_run_file = project_dir + "/.last.txt"
+        last_run_file = project_dir + "/" + last_run_file
         last_run = open(last_run_file, "rt")
-
-        last_run_date = last_run.readline()
-        last_run_commit = last_run.readline()
+        last_run_date = last_run.readline().strip('\n')
+        print("test last run date - " + str(last_run_date))
+        last_run_commit = last_run.readline().strip('\n')
+        print("test last run commit - " + str(last_run_commit))
 
         last_run.close()
 
@@ -95,19 +85,32 @@ def init_run(project_dir):
 
     return last_run_date, last_run_commit
 
+#TODO - delete
+def archive_artifacts(current_run_date, project_dir, project_name):
+    archives_dir = project_dir + "/archives/"
+    tar_name = archives_dir + project_name + "-" + current_run_date
+    tar = tarfile.open(tar_name, "w")
+
+    for name in ["artifact1", "artifact2", "artifact2"]:
+        tar.add(name)
+        tar.close()
 
 def git(*args):
-
     return subprocess.check_call(['git'] + list(args))
 
-def save_current_data(current_run_date, current_run_commit, project_dir):
+def save_current_run(current_run_date, current_run_commit, project_dir, last_run_file):
 
     try:
+        if current_run_date is None or str(current_run_date).strip() == '':
+            print("Error! - commit date cannot be empy")
+            exit()
 
-        current_run_file = project_dir + "/.last.txt"
+        print("test current run date - " + str(current_run_date))
+        print("test current run commit - " + str(current_run_commit))
+
+        current_run_file = project_dir + "/" + last_run_file
         current_run = open(current_run_file, "wt")
-
-        current_run.truncate(0)  # need '0' when using r+
+        current_run.truncate(0)  # clean the file
         current_run.write(current_run_date + '\n')
         current_run.write(current_run_commit + '\n')
 
@@ -117,28 +120,20 @@ def save_current_data(current_run_date, current_run_commit, project_dir):
 
         print(e)
 
-
-
-def get_commit_info(last_run_date):
-
+def get_commit_info(api_url_base, last_run_date):
     api_url = "%s?since=%s" % (api_url_base,last_run_date)
     print ('api url = ' + str(api_url))
-
-    # response = requests.get(api_url, headers=headers)
     response = requests.get(api_url)
-    print ('test=' + str(response))
 
-    if response.status_code == 200:
-        # lastRunDate = datetime.datetime.now()
-        json_content = json.loads(response.content.decode('utf-8'))
-
-        current_run_date = json_content[0]['commit']['committer']['date']
-        current_run_commit = json_content[0]['sha']
-
-        return current_run_date, current_run_commit
-
-    else:
+    if response.status_code != 200:
         return None
 
+    json_content = json.loads(response.content.decode('utf-8'))
+    current_run_date = json_content[0]['commit']['committer']['date'] #only intrested in the latest commit
+    current_run_commit = json_content[0]['sha']
+
+    return current_run_date, current_run_commit
+
 # Application entry point -> call main()
-main()
+if __name__ == '__main__':
+    main()
