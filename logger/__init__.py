@@ -1,1 +1,1 @@
-from .ci_logger import ci_cycle, last_commit, current_commit, clone_from_remote
+from .ci_logger import start_cycle, last_commit, current_commit, clone_from_remote, end_cycle
