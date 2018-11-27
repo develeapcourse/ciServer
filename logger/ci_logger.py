@@ -1,12 +1,15 @@
 import logging
 from datetime import date
 # import sys
-import os, sys
+import os
+import configparser
 
-try:
-	DIR_NAME = sys.argv[1]
-except Exception as e:
-	print(e)
+DIR_NAME="logs/"
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+
+dir_name = config['DEFUALT']
 
 LOG_FORMAT = "%(levelname)s_-_%(asctime)s_-_%(message)s"
 
