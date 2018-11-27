@@ -1,0 +1,16 @@
+[Project]
+last_run_file: .last.txt
+
+[Paths]
+project_name: gan_shmuel
+base_dir: /tmp
+project_dir: %(base_dir)s/%(project_name)s
+build_dir = %(project_dir)s/build
+devops_build_script = %(build_dir)s/devops/build
+
+
+
+[Git]
+project_name: gan_shmuel
+api_url_base: https://api.github.com/repos/develeapcourse/%(project_name)s/commits
+git_repo: https://github.com/develeapcourse/%(project_name)s.git
