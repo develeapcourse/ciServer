@@ -9,7 +9,6 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 
-dir_name = config['DEFUALT']
 
 LOG_FORMAT = "%(levelname)s_-_%(asctime)s_-_%(message)s"
 
