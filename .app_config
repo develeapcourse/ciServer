@@ -1,16 +1,25 @@
 [Project]
 last_run_file: .last.txt
+init_run_date: 2018-11-24T00:00:00Z
+
 
 [Paths]
+config_file: /home/danny/develeap/ciServer/.app_config
 project_name: gan_shmuel
 base_dir: /tmp
 project_dir: %(base_dir)s/%(project_name)s
 build_dir = %(project_dir)s/build
 devops_build_script = %(build_dir)s/devops/build
 
-
-
 [Git]
 project_name: gan_shmuel
 api_url_base: https://api.github.com/repos/develeapcourse/%(project_name)s/commits
 git_repo: https://github.com/develeapcourse/%(project_name)s.git
+
+[Mail]
+dist_list: develeapcourse@gmail.com
+
+[Messages]
+msg_build_failed: Failure in build script
+msg_missing_config_file: Configuration file is missing
+msg_build_server_mail_subject: Message from build server
