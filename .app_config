@@ -17,7 +17,8 @@ api_url_base: https://api.github.com/repos/develeapcourse/%(project_name)s/commi
 git_repo: https://github.com/develeapcourse/%(project_name)s.git
 
 [Mail]
-dist_list: develeapcourse@gmail.com
+dist_list: lonnychetrit@gmail.com Bittanraphael@gmail.com orlykul@gmail.com zvitam@hotmail.com michael52@msn.com adam.promo@gmail.com danny.konstadt@gmail.com
+
 
 [Messages]
 msg_build_failed: Failure in build script
